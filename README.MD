@@ -19,7 +19,7 @@ Sigue estos pasos para desplegar el proyecto en tu entorno local desde cero:
 
 ### 1. Clonar el proyecto (o descomprimir)
 ```bash
-git clone [URL_DE_TU_REPOSITORIO]
+git clone [https://github.com/javovoign/agua-mantra.git]
 cd agua_mantra
 
 2. Crear y activar el entorno virtual"
