@@ -349,25 +349,59 @@
             rutaVisual.appendChild(punto);
         });
 
-        // Lista de paradas
+        // Lista de paradas (Método seguro contra XSS)
         const ahora = new Date();
         const minutosPorParada = 8;
-        const listaHtml = pedidosOrdenados.map((p, idx) => {
+        const contenedorParadas = document.getElementById('lista-paradas-contenido');
+        contenedorParadas.innerHTML = ''; // Limpiamos el contenedor antes de agregar
+
+        pedidosOrdenados.forEach((p, idx) => {
             const hora = new Date(ahora.getTime() + (idx + 1) * minutosPorParada * 60000);
             const horaStr = hora.toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit' });
-            return `
-                <div class="parada" id="parada-${idx}">
-                    <div class="numero">${idx + 1}</div>
-                    <div class="info">
-                        <div class="nombre">${p.nombre}</div>
-                        <div class="direccion">${p.direccion}</div>
-                        <div class="direccion">💧 ${p.cantidad} botellón${p.cantidad > 1 ? 'es' : ''}</div>
-                    </div>
-                    <div class="hora">${horaStr}</div>
-                </div>
-            `;
-        }).join('');
-        document.getElementById('lista-paradas-contenido').innerHTML = listaHtml;
+
+            // Creamos el div principal de la parada
+            const divParada = document.createElement('div');
+            divParada.className = 'parada';
+            divParada.id = `parada-${idx}`;
+
+            // Creamos el número
+            const divNumero = document.createElement('div');
+            divNumero.className = 'numero';
+            divNumero.textContent = idx + 1;
+
+            // Creamos el contenedor de info
+            const divInfo = document.createElement('div');
+            divInfo.className = 'info';
+
+            // Usamos textContent para los datos del cliente (evita XSS)
+            const divNombre = document.createElement('div');
+            divNombre.className = 'nombre';
+            divNombre.textContent = p.nombre;
+
+            const divDireccion = document.createElement('div');
+            divDireccion.className = 'direccion';
+            divDireccion.textContent = p.direccion;
+
+            const divCantidad = document.createElement('div');
+            divCantidad.className = 'direccion';
+            divCantidad.textContent = `💧 ${p.cantidad} botellón${p.cantidad > 1 ? 'es' : ''}`;
+
+            divInfo.appendChild(divNombre);
+            divInfo.appendChild(divDireccion);
+            divInfo.appendChild(divCantidad);
+
+            // Creamos la hora
+            const divHora = document.createElement('div');
+            divHora.className = 'hora';
+            divHora.textContent = horaStr;
+
+            // Ensamblamos todo
+            divParada.appendChild(divNumero);
+            divParada.appendChild(divInfo);
+            divParada.appendChild(divHora);
+
+            contenedorParadas.appendChild(divParada);
+        });
 
         // ===== SIMULACIÓN =====
         document.getElementById('btn-simular').addEventListener('click', iniciarSimulacion);
@@ -426,7 +460,7 @@
             // Lista
             document.querySelectorAll('.parada').forEach((el, idx) => {
                 el.classList.remove('activa');
-                if (idx < paradaActual) el.classList.add('visitada');
+                if (idx < paradaActual) el.classList.add('visitado');
             });
             const paradaLista = document.getElementById(`parada-${paradaActual}`);
             if (paradaLista) {
