@@ -1,0 +1,457 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Rutas de despacho — Agua Mantra</title>
+    <link rel="stylesheet" href="{% static 'pedidos/css/estilos.css' %}">
+    <style>
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+        }
+        .stat {
+            background: var(--blanco);
+            padding: 1.5rem;
+            border-radius: var(--radio);
+            box-shadow: var(--sombra-suave);
+            border-left: 4px solid var(--azul-agua);
+        }
+        .stat .numero {
+            font-size: 2rem;
+            font-weight: 700;
+            color: var(--azul-oscuro);
+            line-height: 1;
+        }
+        .stat .etiqueta {
+            color: var(--gris-medio);
+            font-size: 0.85rem;
+            margin-top: 0.5rem;
+        }
+        .controles {
+            display: flex;
+            gap: 0.75rem;
+            margin-bottom: 1.5rem;
+            flex-wrap: wrap;
+        }
+        .controles button {
+            padding: 0.75rem 1.5rem;
+            border: none;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: var(--transicion);
+            font-size: 0.95rem;
+        }
+        .btn-simular {
+            background: linear-gradient(135deg, var(--azul-agua), var(--azul-oscuro));
+            color: white;
+        }
+        .btn-simular:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: var(--sombra-media);
+        }
+        .btn-simular:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        .btn-detener {
+            background: #FEE2E2;
+            color: #991B1B;
+        }
+        .btn-detener:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        /* ===== MAPA SIMULADO ===== */
+        .mapa-simulado {
+            background: linear-gradient(135deg, #E0F2FE 0%, #BAE6FD 100%);
+            border-radius: var(--radio);
+            padding: 2rem;
+            margin-bottom: 1.5rem;
+            box-shadow: var(--sombra-media);
+            min-height: 300px;
+            position: relative;
+            overflow: hidden;
+        }
+        .mapa-simulado::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background-image:
+                linear-gradient(rgba(255,255,255,0.4) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(255,255,255,0.4) 1px, transparent 1px);
+            background-size: 40px 40px;
+            pointer-events: none;
+        }
+        .mapa-titulo {
+            position: relative;
+            z-index: 2;
+            color: var(--azul-oscuro);
+            font-weight: 700;
+            margin-bottom: 1rem;
+            font-size: 1.1rem;
+        }
+        .bodega {
+            position: relative;
+            z-index: 2;
+            background: white;
+            padding: 0.75rem 1.25rem;
+            border-radius: var(--radio);
+            box-shadow: var(--sombra-suave);
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-weight: 600;
+            color: var(--azul-oscuro);
+            margin-bottom: 1.5rem;
+            font-size: 0.9rem;
+        }
+        .ruta-visual {
+            position: relative;
+            z-index: 2;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            flex-wrap: wrap;
+            padding: 1.5rem 1rem;
+            background: rgba(255,255,255,0.7);
+            border-radius: var(--radio);
+        }
+        .punto-ruta {
+            width: 44px;
+            height: 44px;
+            border-radius: 50%;
+            background: var(--azul-agua);
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            transition: var(--transicion);
+            position: relative;
+            flex-shrink: 0;
+            font-size: 1rem;
+        }
+        .punto-ruta.activo {
+            background: var(--verde-exito);
+            transform: scale(1.15);
+            box-shadow: 0 0 0 6px rgba(16, 185, 129, 0.3);
+            animation: pulso-punto 1.2s infinite;
+        }
+        @keyframes pulso-punto {
+            0%, 100% { box-shadow: 0 0 0 6px rgba(16, 185, 129, 0.3); }
+            50% { box-shadow: 0 0 0 14px rgba(16, 185, 129, 0.1); }
+        }
+        .punto-ruta.visitado {
+            background: var(--gris-medio);
+            opacity: 0.6;
+        }
+        .linea-ruta {
+            width: 25px;
+            height: 3px;
+            background: var(--azul-agua);
+            border-radius: 2px;
+            flex-shrink: 0;
+            transition: var(--transicion);
+        }
+        .linea-ruta.recorrida {
+            background: var(--verde-exito);
+        }
+        .camion {
+            font-size: 1.5rem;
+            position: absolute;
+            top: -28px;
+            animation: mueve-camion 0.5s ease;
+        }
+        @keyframes mueve-camion {
+            0% { transform: translateX(-10px); opacity: 0; }
+            100% { transform: translateX(0); opacity: 1; }
+        }
+
+        /* ===== LISTA DE PARADAS ===== */
+        .lista-paradas {
+            background: var(--blanco);
+            border-radius: var(--radio);
+            padding: 1.5rem;
+            box-shadow: var(--sombra-media);
+        }
+        .lista-paradas h2 {
+            color: var(--azul-oscuro);
+            margin-bottom: 1rem;
+        }
+        .parada {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            padding: 0.85rem;
+            border-bottom: 1px solid #F1F5F9;
+            transition: var(--transicion);
+            border-left: 4px solid transparent;
+        }
+        .parada:hover {
+            background: var(--gris-claro);
+        }
+        .parada.activa {
+            background: var(--azul-claro);
+            border-left-color: var(--verde-exito);
+        }
+        .parada.visitada {
+            opacity: 0.5;
+        }
+        .parada .numero {
+            background: var(--azul-agua);
+            color: white;
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            flex-shrink: 0;
+        }
+        .parada.activa .numero {
+            background: var(--verde-exito);
+        }
+        .parada .info {
+            flex: 1;
+        }
+        .parada .nombre {
+            font-weight: 600;
+            color: var(--gris-texto);
+        }
+        .parada .direccion {
+            font-size: 0.85rem;
+            color: var(--gris-medio);
+        }
+        .parada .hora {
+            font-size: 0.85rem;
+            color: var(--azul-oscuro);
+            font-weight: 600;
+            background: var(--azul-claro);
+            padding: 0.25rem 0.75rem;
+            border-radius: 999px;
+        }
+        .vacio {
+            background: var(--blanco);
+            padding: 3rem;
+            border-radius: var(--radio);
+            text-align: center;
+            color: var(--gris-medio);
+            box-shadow: var(--sombra-suave);
+        }
+    </style>
+</head>
+<body>
+
+    <header class="header">
+        <h1>🗺️ Rutas del día</h1>
+        <p>Simulación de despachos optimizados — Santiago</p>
+    </header>
+
+    <div class="container-wide">
+        {% if pedidos_json %}
+            <div class="stats">
+                <div class="stat">
+                    <div class="numero" id="stat-paradas">{{ pedidos_json|length }}</div>
+                    <div class="etiqueta">Paradas</div>
+                </div>
+                <div class="stat">
+                    <div class="numero" id="stat-botellones">0</div>
+                    <div class="etiqueta">Botellones</div>
+                </div>
+                <div class="stat">
+                    <div class="numero" id="stat-distancia">—</div>
+                    <div class="etiqueta">Distancia estimada</div>
+                </div>
+                <div class="stat">
+                    <div class="numero" id="stat-duracion">—</div>
+                    <div class="etiqueta">Duración estimada</div>
+                </div>
+            </div>
+
+            <div class="controles">
+                <button id="btn-simular" class="btn-simular">
+                    ▶️ Iniciar simulación
+                </button>
+                <button id="btn-detener" class="btn-detener" disabled>
+                    ⏹️ Detener
+                </button>
+            </div>
+
+            <div class="mapa-simulado">
+                <div class="mapa-titulo">📍 Ruta optimizada de Santiago</div>
+                <div class="bodega">
+                    🏠 Bodega Agua Mantra — Santiago Centro
+                </div>
+                <div class="ruta-visual" id="ruta-visual">
+                    <div class="punto-ruta" data-idx="-1">🏠</div>
+                </div>
+            </div>
+
+            <div class="lista-paradas">
+                <h2>📋 Orden de entrega</h2>
+                <div id="lista-paradas-contenido"></div>
+            </div>
+        {% else %}
+            <div class="vacio">
+                <p style="font-size: 4rem;">📭</p>
+                <h2>No hay pedidos pagados pendientes</h2>
+                <p>Cuando un cliente pague su pedido, aparecerá aquí para asignarle una ruta.</p>
+                <a href="{% url 'index' %}" class="btn btn-primario"
+                   style="max-width: 300px; margin: 1.5rem auto 0; text-decoration: none;">
+                    ← Volver al inicio
+                </a>
+            </div>
+        {% endif %}
+    </div>
+
+    <footer class="footer">
+        © 2026 Agua Mantra · Sistema de rutas
+    </footer>
+
+    {{ pedidos_json|json_script:"pedidos-data" }}
+
+    {% if pedidos_json %}
+    <script>
+        const pedidos = JSON.parse(document.getElementById('pedidos-data').textContent);
+        const pedidosOrdenados = [...pedidos];
+        let simulacionActiva = false;
+        let timeoutId = null;
+        let paradaActual = -1;
+
+        // Stats
+        const totalBotellones = pedidosOrdenados.reduce((s, p) => s + p.cantidad, 0);
+        document.getElementById('stat-botellones').textContent = totalBotellones;
+
+        const distanciaEstimada = (pedidosOrdenados.length * 3.5).toFixed(1);
+        const duracionEstimada = pedidosOrdenados.length * 8;
+        document.getElementById('stat-distancia').textContent = distanciaEstimada + ' km';
+        document.getElementById('stat-duracion').textContent = duracionEstimada + ' min';
+
+        // Dibujar puntos de la ruta visual
+        const rutaVisual = document.getElementById('ruta-visual');
+        pedidosOrdenados.forEach((p, idx) => {
+            const linea = document.createElement('div');
+            linea.className = 'linea-ruta';
+            linea.dataset.idx = idx;
+            rutaVisual.appendChild(linea);
+
+            const punto = document.createElement('div');
+            punto.className = 'punto-ruta';
+            punto.dataset.idx = idx;
+            punto.textContent = idx + 1;
+            rutaVisual.appendChild(punto);
+        });
+
+        // Lista de paradas
+        const ahora = new Date();
+        const minutosPorParada = 8;
+        const listaHtml = pedidosOrdenados.map((p, idx) => {
+            const hora = new Date(ahora.getTime() + (idx + 1) * minutosPorParada * 60000);
+            const horaStr = hora.toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit' });
+            return `
+                <div class="parada" id="parada-${idx}">
+                    <div class="numero">${idx + 1}</div>
+                    <div class="info">
+                        <div class="nombre">${p.nombre}</div>
+                        <div class="direccion">${p.direccion}</div>
+                        <div class="direccion">💧 ${p.cantidad} botellón${p.cantidad > 1 ? 'es' : ''}</div>
+                    </div>
+                    <div class="hora">${horaStr}</div>
+                </div>
+            `;
+        }).join('');
+        document.getElementById('lista-paradas-contenido').innerHTML = listaHtml;
+
+        // ===== SIMULACIÓN =====
+        document.getElementById('btn-simular').addEventListener('click', iniciarSimulacion);
+        document.getElementById('btn-detener').addEventListener('click', detenerSimulacion);
+
+        function iniciarSimulacion() {
+            if (simulacionActiva) return;
+            simulacionActiva = true;
+            paradaActual = -1;
+            document.getElementById('btn-simular').disabled = true;
+            document.getElementById('btn-detener').disabled = false;
+
+            document.querySelectorAll('.punto-ruta, .linea-ruta, .parada').forEach(el => {
+                el.classList.remove('activo', 'visitado', 'recorrida');
+            });
+            document.querySelectorAll('.camion').forEach(c => c.remove());
+
+            avanzarParada();
+        }
+
+        function avanzarParada() {
+            if (!simulacionActiva) return;
+            paradaActual++;
+
+            if (paradaActual >= pedidosOrdenados.length) {
+                detenerSimulacion();
+                return;
+            }
+
+            // Puntos visitados
+            document.querySelectorAll('.punto-ruta').forEach((el) => {
+                const idx = parseInt(el.dataset.idx);
+                if (idx >= 0 && idx < paradaActual) {
+                    el.classList.add('visitado');
+                    el.classList.remove('activo');
+                }
+            });
+
+            // Líneas recorridas
+            document.querySelectorAll('.linea-ruta').forEach((el) => {
+                const idx = parseInt(el.dataset.idx);
+                if (idx < paradaActual) el.classList.add('recorrida');
+            });
+
+            // Punto activo
+            const puntoActual = document.querySelector(`.punto-ruta[data-idx="${paradaActual}"]`);
+            if (puntoActual) {
+                puntoActual.classList.add('activo');
+                document.querySelectorAll('.camion').forEach(c => c.remove());
+                const camion = document.createElement('span');
+                camion.className = 'camion';
+                camion.textContent = '🚚';
+                puntoActual.appendChild(camion);
+            }
+
+            // Lista
+            document.querySelectorAll('.parada').forEach((el, idx) => {
+                el.classList.remove('activa');
+                if (idx < paradaActual) el.classList.add('visitada');
+            });
+            const paradaLista = document.getElementById(`parada-${paradaActual}`);
+            if (paradaLista) {
+                paradaLista.classList.add('activa');
+                paradaLista.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }
+
+            timeoutId = setTimeout(avanzarParada, 2000);
+        }
+
+        function detenerSimulacion() {
+            simulacionActiva = false;
+            if (timeoutId) {
+                clearTimeout(timeoutId);
+                timeoutId = null;
+            }
+            document.querySelectorAll('.camion').forEach(c => c.remove());
+            document.querySelectorAll('.punto-ruta').forEach(el => el.classList.remove('activo'));
+            document.querySelectorAll('.parada').forEach(el => el.classList.remove('activa'));
+
+            document.getElementById('btn-simular').disabled = false;
+            document.getElementById('btn-detener').disabled = true;
+        }
+    </script>
+    {% endif %}
+
+</body>
+</html>

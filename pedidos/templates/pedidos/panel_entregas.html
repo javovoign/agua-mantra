@@ -1,0 +1,114 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Entregas — Agua Mantra</title>
+    <link rel="stylesheet" href="{% static 'pedidos/css/estilos.css' %}">
+    <style>
+        .pedido-card {
+            background: var(--blanco);
+            border-radius: var(--radio);
+            padding: 1.5rem;
+            box-shadow: var(--sombra-suave);
+            margin-bottom: 1rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 1rem;
+        }
+        .pedido-info h3 {
+            color: var(--azul-oscuro);
+            margin-bottom: 0.25rem;
+        }
+        .pedido-info p {
+            color: var(--gris-medio);
+            font-size: 0.9rem;
+        }
+        .acciones {
+            display: flex;
+            gap: 0.5rem;
+            flex-wrap: wrap;
+        }
+        .btn-entregado {
+            background: #10B981;
+            color: white;
+            padding: 0.75rem 1.5rem;
+            border: none;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+        }
+        .btn-no-entregado {
+            background: #EF4444;
+            color: white;
+            padding: 0.75rem 1.5rem;
+            border: none;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+        }
+        @media (max-width: 640px) {
+            .pedido-card { flex-direction: column; align-items: stretch; }
+        }
+    </style>
+</head>
+<body>
+
+    <header class="header">
+        <h1>🚚 Mis entregas del día</h1>
+        <p>{{ request.user.username }}</p>
+    </header>
+
+    <div class="container-wide">
+
+        {% if messages %}
+            {% for message in messages %}
+                <div class="alert alert-{% if message.tags == 'error' %}error{% elif message.tags == 'warning' %}error{% else %}success{% endif %}">
+                    {{ message }}
+                </div>
+            {% endfor %}
+        {% endif %}
+
+        {% for pedido in pedidos %}
+            <div class="pedido-card">
+                <div class="pedido-info">
+                    <h3>Pedido #{{ pedido.id }} — {{ pedido.cliente.nombre }}</h3>
+                    <p>📍 {{ pedido.cliente.direccion }}</p>
+                    <p>💧 {{ pedido.cantidad }} botellón{{ pedido.cantidad|pluralize:"es" }}</p>
+                </div>
+                <form method="post" class="acciones">
+                    {% csrf_token %}
+                    <input type="hidden" name="pedido_id" value="{{ pedido.id }}">
+                    <button type="submit" name="accion" value="entregado" class="btn-entregado">
+                        ✅ Entregado
+                    </button>
+                    <button type="submit" name="accion" value="no_entregado" class="btn-no-entregado">
+                        ❌ No entregado
+                    </button>
+                </form>
+            </div>
+        {% empty %}
+            <div style="background: white; padding: 3rem; border-radius: 12px; text-align: center;">
+                <p style="font-size: 3rem;">🎉</p>
+                <h2>No hay entregas pendientes</h2>
+                <p style="color: var(--gris-medio);">Todas las entregas del día están completadas.</p>
+            </div>
+        {% endfor %}
+
+        <div style="text-align: center; margin-top: 2rem;">
+            <a href="{% url 'logout' %}" class="btn" 
+               style="background: #FEE2E2; color: #991B1B; max-width: 250px; margin: 0 auto; text-decoration: none;">
+                🚪 Cerrar sesión
+            </a>
+        </div>
+
+    </div>
+
+    <footer class="footer">
+        © 2026 Agua Mantra · App del chofer
+    </footer>
+
+</body>
+</html>

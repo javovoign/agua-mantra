@@ -1,0 +1,393 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Inventario — Agua Mantra</title>
+    <link rel="stylesheet" href="{% static 'pedidos/css/estilos.css' %}">
+    <style>
+        .stock-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+            gap: 1.25rem;
+            margin-bottom: 2rem;
+        }
+        .stock-card {
+            background: var(--blanco);
+            border-radius: var(--radio);
+            padding: 1.75rem;
+            box-shadow: var(--sombra-suave);
+            border-left: 5px solid var(--azul-agua);
+            transition: var(--transicion);
+            position: relative;
+            overflow: hidden;
+        }
+        .stock-card:hover {
+            transform: translateY(-4px);
+            box-shadow: var(--sombra-media);
+        }
+        .stock-card.critico {
+            border-left-color: var(--rojo-error);
+            background: linear-gradient(135deg, #FFF5F5 0%, #FFFFFF 100%);
+        }
+        .stock-card.critico::after {
+            content: '⚠️';
+            position: absolute;
+            top: 1rem;
+            right: 1rem;
+            font-size: 1.5rem;
+            animation: pulso 1.5s infinite;
+        }
+        @keyframes pulso {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.5; transform: scale(1.1); }
+        }
+        .stock-card .icono-tipo {
+            font-size: 2rem;
+            margin-bottom: 0.75rem;
+        }
+        .stock-card .tipo {
+            font-size: 0.85rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: var(--gris-medio);
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+        }
+        .stock-card .numero {
+            font-size: 3rem;
+            font-weight: 800;
+            color: var(--azul-oscuro);
+            line-height: 1;
+            margin-bottom: 0.25rem;
+        }
+        .stock-card.critico .numero {
+            color: var(--rojo-error);
+        }
+        .stock-card .unidad {
+            font-size: 0.85rem;
+            color: var(--gris-medio);
+        }
+        .stock-card .barra-mini {
+            margin-top: 1rem;
+            height: 6px;
+            background: #E2E8F0;
+            border-radius: 999px;
+            overflow: hidden;
+        }
+        .stock-card .barra-mini .relleno {
+            height: 100%;
+            background: linear-gradient(90deg, var(--azul-agua), var(--azul-oscuro));
+            transition: width 0.8s ease;
+        }
+        .stock-card.critico .barra-mini .relleno {
+            background: linear-gradient(90deg, #F87171, var(--rojo-error));
+        }
+
+        .alertas-panel {
+            margin-bottom: 2rem;
+        }
+        .alerta-grande {
+            background: linear-gradient(135deg, #FEF2F2 0%, #FFFFFF 100%);
+            border-left: 5px solid var(--rojo-error);
+            border-radius: var(--radio);
+            padding: 1.25rem 1.5rem;
+            margin-bottom: 0.75rem;
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            box-shadow: var(--sombra-suave);
+        }
+        .alerta-grande .icono {
+            font-size: 1.75rem;
+        }
+        .alerta-grande .contenido {
+            flex: 1;
+        }
+        .alerta-grande .titulo {
+            font-weight: 700;
+            color: #991B1B;
+            margin-bottom: 0.15rem;
+        }
+        .alerta-grande .detalle {
+            color: #7F1D1D;
+            font-size: 0.9rem;
+        }
+        .alerta-grande .accion {
+            background: var(--rojo-error);
+            color: white;
+            padding: 0.5rem 1rem;
+            border-radius: 8px;
+            text-decoration: none;
+            font-weight: 600;
+            font-size: 0.85rem;
+            white-space: nowrap;
+        }
+
+        .tabla-card {
+            background: var(--blanco);
+            border-radius: var(--radio);
+            padding: 2rem;
+            box-shadow: var(--sombra-media);
+            margin-bottom: 2rem;
+            overflow-x: auto;
+        }
+        .tabla-card h2 {
+            color: var(--azul-oscuro);
+            margin-bottom: 1.5rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            min-width: 600px;
+        }
+        thead th {
+            text-align: left;
+            padding: 0.75rem 1rem;
+            font-size: 0.8rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: var(--gris-medio);
+            border-bottom: 2px solid #E2E8F0;
+        }
+        tbody td {
+            padding: 1rem;
+            border-bottom: 1px solid #F1F5F9;
+        }
+        tbody tr:hover {
+            background: var(--gris-claro);
+        }
+        .celda-tipo {
+            font-weight: 600;
+            color: var(--gris-texto);
+        }
+        .barra-progreso {
+            background: #E2E8F0;
+            border-radius: 999px;
+            height: 10px;
+            overflow: hidden;
+            min-width: 120px;
+        }
+        .barra-progreso .relleno {
+            height: 100%;
+            background: linear-gradient(90deg, var(--azul-agua), var(--azul-oscuro));
+            transition: width 0.8s ease;
+        }
+        .barra-progreso.critico .relleno {
+            background: linear-gradient(90deg, #F87171, var(--rojo-error));
+        }
+        .badge {
+            display: inline-block;
+            padding: 0.35rem 0.85rem;
+            border-radius: 999px;
+            font-size: 0.8rem;
+            font-weight: 600;
+        }
+        .badge-ok {
+            background: #D1FAE5;
+            color: #065F46;
+        }
+        .badge-critico {
+            background: #FEE2E2;
+            color: #991B1B;
+        }
+
+        .resumen-global {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }
+        .resumen-card {
+            background: linear-gradient(135deg, var(--azul-agua), var(--azul-oscuro));
+            color: white;
+            padding: 1.5rem;
+            border-radius: var(--radio);
+            box-shadow: var(--sombra-media);
+        }
+        .resumen-card .titulo {
+            font-size: 0.8rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            opacity: 0.9;
+            margin-bottom: 0.5rem;
+        }
+        .resumen-card .valor {
+            font-size: 2rem;
+            font-weight: 800;
+            line-height: 1;
+        }
+        .resumen-card .subtexto {
+            font-size: 0.85rem;
+            opacity: 0.85;
+            margin-top: 0.35rem;
+        }
+
+        .vacio {
+            background: var(--blanco);
+            padding: 3rem;
+            border-radius: var(--radio);
+            text-align: center;
+            color: var(--gris-medio);
+            box-shadow: var(--sombra-suave);
+        }
+        .vacio .icono-grande {
+            font-size: 4rem;
+            margin-bottom: 1rem;
+        }
+
+        @media (max-width: 640px) {
+            .stock-card .numero { font-size: 2.25rem; }
+            .alerta-grande { flex-direction: column; align-items: flex-start; }
+            .alerta-grande .accion { width: 100%; text-align: center; }
+        }
+    </style>
+</head>
+<body>
+
+    <header class="header">
+        <h1>📦 Control de inventario</h1>
+        <p>Stock de botellones en tiempo real</p>
+    </header>
+
+    <div class="container-wide">
+
+        {% if items %}
+        <div class="resumen-global">
+            <div class="resumen-card">
+                <div class="titulo">Total en bodega</div>
+                <div class="valor">{{ total_botellones }}</div>
+                <div class="subtexto">botellones en total</div>
+            </div>
+            <div class="resumen-card">
+                <div class="titulo">Estado del stock</div>
+                <div class="valor">{% if alertas %}⚠️{% else %}✅{% endif %}</div>
+                <div class="subtexto">
+                    {% if alertas %}
+                        {{ alertas|length }} alerta{{ alertas|length|pluralize:"s" }} activa{{ alertas|length|pluralize:"s" }}
+                    {% else %}
+                        Todo en orden
+                    {% endif %}
+                </div>
+            </div>
+            <div class="resumen-card">
+                <div class="titulo">Tipos monitoreados</div>
+                <div class="valor">{{ items|length }}</div>
+                <div class="subtexto">categorías de botellón</div>
+            </div>
+        </div>
+        {% endif %}
+
+        {% if alertas %}
+        <div class="alertas-panel">
+            {% for alerta in alertas %}
+            <div class="alerta-grande">
+                <div class="icono">🚨</div>
+                <div class="contenido">
+                    <div class="titulo">Stock crítico: {{ alerta.tipo }}</div>
+                    <div class="detalle">
+                        Quedan <strong>{{ alerta.cantidad }}</strong> unidades (umbral mínimo: {{ alerta.umbral }})
+                    </div>
+                </div>
+                <a href="/admin/pedidos/inventario/" class="accion">Reponer →</a>
+            </div>
+            {% endfor %}
+        </div>
+        {% endif %}
+
+        {% if items %}
+        <div class="stock-grid">
+            {% for item in items %}
+            <div class="stock-card {% if item.es_critico %}critico{% endif %}">
+                <div class="icono-tipo">
+                    {% if item.tipo == 'LLENO' %}💧
+                    {% elif item.tipo == 'VACIO' %}🫙
+                    {% else %}💔{% endif %}
+                </div>
+                <div class="tipo">{{ item.tipo_display }}</div>
+                <div class="numero">{{ item.cantidad }}</div>
+                <div class="unidad">unidades disponibles</div>
+                <div class="barra-mini">
+                    <div class="relleno" style="width: {{ item.porcentaje }}%;"></div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+
+        <div class="tabla-card">
+            <h2>📋 Detalle de stock</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Tipo de botellón</th>
+                        <th>Cantidad</th>
+                        <th>Nivel de stock</th>
+                        <th>Umbral crítico</th>
+                        <th>Estado</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item in items %}
+                    <tr>
+                        <td class="celda-tipo">
+                            {% if item.tipo == 'LLENO' %}💧
+                            {% elif item.tipo == 'VACIO' %}🫙
+                            {% else %}💔{% endif %}
+                            {{ item.tipo_display }}
+                        </td>
+                        <td><strong>{{ item.cantidad }}</strong></td>
+                        <td style="min-width: 140px;">
+                            <div class="barra-progreso {% if item.es_critico %}critico{% endif %}">
+                                <div class="relleno" style="width: {{ item.porcentaje }}%;"></div>
+                            </div>
+                        </td>
+                        <td>{{ item.umbral_critico }}</td>
+                        <td>
+                            {% if item.es_critico %}
+                                <span class="badge badge-critico">🔴 Crítico</span>
+                            {% else %}
+                                <span class="badge badge-ok">🟢 Normal</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        {% else %}
+        <div class="vacio">
+            <div class="icono-grande">📭</div>
+            <h2>No hay items de inventario</h2>
+            <p>Agrega botellones desde el panel de administración para verlos aquí.</p>
+            <a href="/admin/pedidos/inventario/add/" class="btn btn-primario"
+               style="max-width: 300px; margin: 1.5rem auto 0; text-decoration: none;">
+                ➕ Agregar inventario
+            </a>
+        </div>
+        {% endif %}
+
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin-top: 2rem;">
+            <a href="{% url 'panel' %}" class="btn btn-primario" style="text-decoration: none;">
+                ← Volver al panel
+            </a>
+            <a href="{% url 'rutas' %}" class="btn btn-primario" style="text-decoration: none;">
+                🗺️ Ver rutas
+            </a>
+            <a href="/admin/pedidos/inventario/" class="btn btn-primario" style="text-decoration: none;">
+                🛠️ Editar en Admin
+            </a>
+        </div>
+
+    </div>
+
+    <footer class="footer">
+        © 2026 Agua Mantra · Sistema de inventario
+    </footer>
+
+</body>
+</html>

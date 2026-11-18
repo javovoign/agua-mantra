@@ -1,0 +1,179 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Panel — Agua Mantra</title>
+    <link rel="stylesheet" href="{% static 'pedidos/css/estilos.css' %}">
+    <style>
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }
+        .stat {
+            background: var(--blanco);
+            padding: 1.5rem;
+            border-radius: var(--radio);
+            box-shadow: var(--sombra-suave);
+            border-left: 4px solid var(--azul-agua);
+        }
+        .stat .numero {
+            font-size: 2.25rem;
+            font-weight: 700;
+            color: var(--azul-oscuro);
+            line-height: 1;
+        }
+        .stat .etiqueta {
+            color: var(--gris-medio);
+            font-size: 0.85rem;
+            margin-top: 0.5rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        .tabla-card {
+            background: var(--blanco);
+            border-radius: var(--radio);
+            padding: 2rem;
+            box-shadow: var(--sombra-media);
+            margin-bottom: 2rem;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        thead th {
+            text-align: left;
+            padding: 0.75rem 1rem;
+            font-size: 0.8rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: var(--gris-medio);
+            border-bottom: 2px solid #E2E8F0;
+        }
+        tbody td {
+            padding: 1rem;
+            border-bottom: 1px solid #F1F5F9;
+        }
+        .badge {
+            display: inline-block;
+            padding: 0.25rem 0.75rem;
+            border-radius: 999px;
+            font-size: 0.8rem;
+            font-weight: 600;
+        }
+        .badge-pagado { background: #D1FAE5; color: #065F46; }
+        .badge-pendiente { background: #FEF3C7; color: #92400E; }
+        .badge-entregado { background: #DBEAFE; color: #1E40AF; }
+        .badge-ruta { background: #E0E7FF; color: #3730A3; }
+        .acciones-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+        }
+    </style>
+</head>
+<body>
+
+    <header class="header">
+        <h1>⚙️ Panel de administración</h1>
+        <p>Bienvenido, {{ request.user.username }}</p>
+    </header>
+
+    <div class="container-wide">
+
+        <div class="stats">
+            <div class="stat">
+                <div class="numero">{{ total_pedidos }}</div>
+                <div class="etiqueta">Total pedidos</div>
+            </div>
+            <div class="stat">
+                <div class="numero">{{ pedidos_pagados }}</div>
+                <div class="etiqueta">Pagados</div>
+            </div>
+            <div class="stat">
+                <div class="numero">{{ pedidos_pendientes }}</div>
+                <div class="etiqueta">Pendientes</div>
+            </div>
+            <div class="stat">
+                <div class="numero">{{ pedidos_entregados }}</div>
+                <div class="etiqueta">Entregados</div>
+            </div>
+        </div>
+
+        <div class="tabla-card">
+            <h2>Últimos pedidos</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>#</th>
+                        <th>Cliente</th>
+                        <th>Dirección</th>
+                        <th>Cantidad</th>
+                        <th>Total</th>
+                        <th>Estado</th>
+                        <th>Fecha</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for pedido in ultimos_pedidos %}
+                    <tr>
+                        <td><strong>#{{ pedido.id }}</strong></td>
+                        <td>{{ pedido.cliente.nombre }}</td>
+                        <td>{{ pedido.cliente.direccion }}</td>
+                        <td>{{ pedido.cantidad }} botellón{{ pedido.cantidad|pluralize:"es" }}</td>
+                        <td>${{ pedido.total }}</td>
+                        <td>
+                            {% if pedido.estado == 'PAGADO' %}
+                                <span class="badge badge-pagado">Pagado</span>
+                            {% elif pedido.estado == 'PENDIENTE_PAGO' %}
+                                <span class="badge badge-pendiente">Pendiente</span>
+                            {% elif pedido.estado == 'EN_RUTA' %}
+                                <span class="badge badge-ruta">En ruta</span>
+                            {% else %}
+                                <span class="badge badge-entregado">Entregado</span>
+                            {% endif %}
+                        </td>
+                        <td>{{ pedido.creado_en|date:"d/m/Y H:i" }}</td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="7" style="text-align: center; color: var(--gris-medio); padding: 2rem;">
+                            No hay pedidos registrados todavía.
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <!-- SECCIÓN DE ACCIONES CON EL NUEVO BOTÓN -->
+        <div class="acciones-grid">
+            <a href="{% url 'rutas' %}" class="btn btn-primario" style="text-decoration: none;">
+                🗺️ Ver rutas
+            </a>
+            <a href="{% url 'asignar_choferes' %}" class="btn btn-primario" style="text-decoration: none;">
+                👤 Asignar Choferes
+            </a>
+            <a href="{% url 'inventario' %}" class="btn btn-primario" style="text-decoration: none;">
+                📦 Inventario
+            </a>
+            <a href="/admin/" class="btn btn-primario" style="text-decoration: none;">
+                🛠️ Admin Django
+            </a>
+            <a href="{% url 'logout' %}" class="btn"
+               style="background: #FEE2E2; color: #991B1B; text-decoration: none;">
+                🚪 Cerrar sesión
+            </a>
+        </div>
+
+    </div>
+
+    <footer class="footer">
+        © 2026 Agua Mantra · Panel de administración
+    </footer>
+
+</body>
+</html>

@@ -1,0 +1,35 @@
+# Entorno virtual de Python
+venv/
+env/
+ENV/
+
+# Archivos compilados de Python
+__pycache__/
+*.py[cod]
+*.pyc
+*.pyo
+*.pyd
+
+# Base de datos local (SQLite)
+db.sqlite3
+db.sqlite3-journal
+
+# Variables de entorno (contienen claves secretas)
+.env
+.env.local
+
+# Archivos estáticos recolectados
+/staticfiles/
+/media/
+
+# Configuración del editor
+.vscode/
+.idea/
+*.swp
+
+# Sistema operativo
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
